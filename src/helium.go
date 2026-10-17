@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -31,4 +32,37 @@ func isHeliumRunning() (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+// ensures Helium is closed, backs up and parses Bookmarks
+// returns the Profile
+func readHelium(path string) (Profile, error) {
+	running, err := isHeliumRunning() // check if helium is running
+	if err != nil {
+		return Profile{}, fmt.Errorf("check if Helium is running: %w", err)
+	}
+	if running {
+		return Profile{}, errors.New("Helium is running, close it first")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Profile{}, err
+	}
+	// write raw bytes as a backup
+	if err := os.WriteFile(path+".gosync.bak", data, 0o600); err != nil {
+		return Profile{}, fmt.Errorf("write backup: %w", err)
+	}
+
+	var p Profile
+	// parse into Profile
+	if err := json.Unmarshal(data, &p); err != nil {
+		return Profile{}, fmt.Errorf("parse %s: %w", path, err)
+	}
+
+	// checksum: MD5 over every node's id/name/url/type. Chromium uses it to detect changes it didn't make.
+	// Cleared on read, so no Profile in this program carries a stale checksum, including bookmarks.json in the repo.
+	// Chromium writes a new one on its next save
+	p.CheckSum = ""
+	return p, nil
 }
