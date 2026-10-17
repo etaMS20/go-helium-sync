@@ -42,6 +42,7 @@ type Roots struct {
 	Synced      Node `json:"synced"`
 }
 
+// count urls recursively
 func countURLs(n *Node) int {
 	switch n.Type {
 	case TypeURL:
@@ -54,4 +55,18 @@ func countURLs(n *Node) int {
 		return total
 	}
 	return 0
+}
+
+// finds a Node by GUID and returns a pointer to it if found
+func findByGUID(n *Node, guid string) *Node {
+	if n.GUID == guid {
+		return n
+	}
+
+	for _, c := range n.Children {
+		if found := findByGUID(c, guid); found != nil {
+			return found
+		}
+	}
+	return nil
 }

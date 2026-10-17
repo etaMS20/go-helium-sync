@@ -1,45 +1,33 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 )
 
 func main() {
-	content, err := os.ReadFile(os.Args[1]) // ReadFile() returns `([]byte, error)`
-	if err != nil {
-		log.Fatal(err)
+	path, err := heliumPath("Default/Bookmarks")
+	running, err := isHeliumRunning()
+	if running {
+		log.Fatal("close Helium first")
 	}
 
-	var p Profile
-
-	/* & passes a pointer to p so the Unmarshall can fill it, returns an error if it fails */
-	err = json.Unmarshal(content, &p)
+	pFile, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("read %s: %w", path, err)
 	}
-	rootItems := map[string]int{
-		"bookmark_bar": countURLs(&p.Roots.BookmarkBar),
-		"other":        countURLs(&p.Roots.Other),
-		"synced":       countURLs(&p.Roots.Synced),
+	if err := os.WriteFile(path+".gosync.bak", pFile, 0o600); err != nil {
+		log.Fatalf("write backup: %v", err)
 	}
-	sum := 0
-	for name, n := range rootItems {
-		sum += n
-		fmt.Println(name, n)
-	}
-	fmt.Println("total", sum)
 
 	// checksum: MD5 over every node's id/name/url/type. Chromium uses it to detect changes it didn't make.
 	// We blank it before writing, because any edit makes the old value wrong. Chromium writes a new one on its next save.
-	p.CheckSum = ""
+	// p.CheckSum = ""
 
 	// Write the parsed profile to a JSON file
-	outputFile := "tmp/output.json"
-	err = writeAtomic(outputFile, p)
-	if err != nil {
-		log.Fatal(err)
-	}
+	/* 	outputFile := "tmp/output.json"
+	   	err = writeAtomic(outputFile, p)
+	   	if err != nil {
+	   		log.Fatal(err)
+	   	} */
 }

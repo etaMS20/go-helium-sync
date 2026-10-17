@@ -108,3 +108,19 @@ func assertCleanDir(t *testing.T, dir string) {
 		t.Errorf("want only %q in dir, got %v", bookmarksFile, names)
 	}
 }
+
+func TestBackupFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, bookmarksFile)
+
+	old := []byte(`{"old": true}`)
+	if err := os.WriteFile(path, old, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	backupFile(path)
+	got := mustReadFile(t, path+".gosync.bak")
+	if !bytes.Equal(got, old) {
+		t.Errorf("backup = %q, want %q", got, old)
+	}
+}
