@@ -1,0 +1,89 @@
+{
+   "checksum": "6a7604f2fb188739d88d29ac09129ab6",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13436474322595822",
+            "date_last_used": "0",
+            "guid": "da55158d-7c45-4471-9731-869611e47d10",
+            "id": "6",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Free Email Accounts @GMX.com: Secure & easy to use",
+            "type": "url",
+            "url": "https://www.gmx.com/"
+         }, {
+            "children": [ {
+               "date_added": "13436474675392801",
+               "date_last_used": "0",
+               "guid": "62466a5b-b2b1-4d3e-8ff4-326fbc2776e0",
+               "id": "8",
+               "meta_info": {
+                  "power_bookmark_meta": ""
+               },
+               "name": "httpbin.org",
+               "type": "url",
+               "url": "https://httpbin.org/"
+            } ],
+            "date_added": "13436474345400324",
+            "date_last_used": "0",
+            "date_modified": "13436474713357706",
+            "guid": "2a76546f-46e4-4e6c-ac49-0e211048ee63",
+            "id": "7",
+            "name": "Test Folder",
+            "type": "folder"
+         }, {
+            "date_added": "13436474263888003",
+            "date_last_used": "13436474811451032",
+            "guid": "be3eb476-9c40-4321-ab0b-f10bd595fe8c",
+            "id": "5",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Rename",
+            "type": "url",
+            "url": "https://www.google.com/asd"
+         } ],
+         "date_added": "13436474235900909",
+         "date_last_used": "0",
+         "date_modified": "13436543881935344",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "13436543881935344",
+            "date_last_used": "0",
+            "guid": "aa352ef5-1d15-476b-bfac-5730eed065ce",
+            "id": "10",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Startseite | Stiftung Warentest – Unabhängige Tests & Ratgeber",
+            "type": "url",
+            "url": "https://www.test.de/"
+         } ],
+         "date_added": "13436474235900909",
+         "date_last_used": "0",
+         "date_modified": "13436543887839258",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13436474235900909",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}

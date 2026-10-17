@@ -1,0 +1,89 @@
+{
+   "checksum": "efdf21c68801af61b6db10b80df9eb54",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13436474263888003",
+            "date_last_used": "0",
+            "guid": "be3eb476-9c40-4321-ab0b-f10bd595fe8c",
+            "id": "5",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Rename",
+            "type": "url",
+            "url": "https://www.google.com/"
+         }, {
+            "children": [  ],
+            "date_added": "13436474345400324",
+            "date_last_used": "0",
+            "date_modified": "13436474347514750",
+            "guid": "2a76546f-46e4-4e6c-ac49-0e211048ee63",
+            "id": "7",
+            "name": "Test Folder",
+            "type": "folder"
+         }, {
+            "date_added": "13436474322595822",
+            "date_last_used": "0",
+            "guid": "da55158d-7c45-4471-9731-869611e47d10",
+            "id": "6",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Free Email Accounts @GMX.com: Secure & easy to use",
+            "type": "url",
+            "url": "https://www.gmx.com/"
+         }, {
+            "date_added": "13436474675392801",
+            "date_last_used": "0",
+            "guid": "62466a5b-b2b1-4d3e-8ff4-326fbc2776e0",
+            "id": "8",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "httpbin.org",
+            "type": "url",
+            "url": "https://httpbin.org/"
+         }, {
+            "date_added": "13436474697583467",
+            "date_last_used": "0",
+            "guid": "9f2b5752-1942-4131-a143-6e189aab515d",
+            "id": "9",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Reddit - The heart of the internet",
+            "type": "url",
+            "url": "https://www.reddit.com/"
+         } ],
+         "date_added": "13436474235900909",
+         "date_last_used": "0",
+         "date_modified": "13436474697583467",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [  ],
+         "date_added": "13436474235900909",
+         "date_last_used": "0",
+         "date_modified": "13436474263888003",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13436474235900909",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}
