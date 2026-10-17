@@ -62,15 +62,3 @@ func syncDir(dir string) error {
 	defer d.Close()
 	return d.Sync()
 }
-
-func backupFile(path string) error {
-	c, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("read %s: %w", path, err)
-	}
-	err = os.WriteFile(path+".gosync.bak", c, 0o600) // put a copy next to the original
-	if err != nil {
-		return fmt.Errorf("write backup %s: %w", path, err)
-	}
-	return err
-}
