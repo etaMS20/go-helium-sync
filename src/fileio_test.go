@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const bookmarksFile string = "Bookmarks"
+
 // Tests the round-trip of unmarshalling and encoding JSON data to ensure that the process is lossless
 func TestRoundTrip(t *testing.T) {
 	files, err := filepath.Glob("../testdata/*.json")

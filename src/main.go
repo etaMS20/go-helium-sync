@@ -8,10 +8,6 @@ import (
 )
 
 func main() {
-	/* 	for i, arg := range os.Args {
-		fmt.Println(i, arg)
-	} */
-
 	content, err := os.ReadFile(os.Args[1]) // ReadFile() returns `([]byte, error)`
 	if err != nil {
 		log.Fatal(err)

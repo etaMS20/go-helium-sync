@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-const bookmarksFile string = "Bookmarks"
-
 // Go treats files ending in _test.go as tests -> Run with `go test ./src`
 
 // helper function to unmarshal JSON data into a struct and fail the test if there's an error
