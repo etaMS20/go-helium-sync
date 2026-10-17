@@ -30,7 +30,6 @@ func setup(remoteURL string) error {
 		return err
 	}
 
-	// get the dir where the local repo lives
 	dir, err := dataDir()
 	if err != nil {
 		return err
@@ -76,23 +75,24 @@ func setup(remoteURL string) error {
 		}
 		_, err = git(dir, "push", "-u", "origin", "main")
 		return err
-	} else { // if not we merge
-		if _, err := git(dir, "fetch", "origin", "main"); err != nil {
-			return err
-		}
-		// local main = remote main, with tracking so later pull/push work.
-		if _, err := git(dir, "checkout", "-B", "main", "origin/main"); err != nil {
-			return err
-		}
-		// read the fetched bookmarks.json
-		data, err := os.ReadFile(filepath.Join(dir, "bookmarks.json"))
-		if err != nil {
-			return err
-		}
-		var p Profile
-		if err := json.Unmarshal(data, &p); err != nil {
-			return fmt.Errorf("parse bookmarks.json: %w", err)
-		}
-		return writeAtomic(path, p)
 	}
+
+	// adopt: remote already has bookmarks, replace this device's with them.
+	if _, err := git(dir, "fetch", "origin", "main"); err != nil {
+		return err
+	}
+	// local main = remote main, with tracking so later pull/push work.
+	if _, err := git(dir, "checkout", "-B", "main", "origin/main"); err != nil {
+		return err
+	}
+	// read the fetched bookmarks.json
+	data, err := os.ReadFile(filepath.Join(dir, "bookmarks.json"))
+	if err != nil {
+		return err
+	}
+	var remote Profile
+	if err := json.Unmarshal(data, &remote); err != nil {
+		return fmt.Errorf("parse bookmarks.json: %w", err)
+	}
+	return writeAtomic(path, remote)
 }
