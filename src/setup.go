@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -77,7 +76,7 @@ func setup(remoteURL string) error {
 		return err
 	}
 
-	// adopt: remote already has bookmarks, replace this device's with them.
+	// join: remote already has bookmarks, merge this device's into them.
 	if _, err := git(dir, "fetch", "origin", "main"); err != nil {
 		return err
 	}
@@ -85,14 +84,11 @@ func setup(remoteURL string) error {
 	if _, err := git(dir, "checkout", "-B", "main", "origin/main"); err != nil {
 		return err
 	}
-	// read the fetched bookmarks.json
-	data, err := os.ReadFile(filepath.Join(dir, "bookmarks.json"))
+	remote, err := gitProfile(dir, "origin/main")
 	if err != nil {
 		return err
 	}
-	var remote Profile
-	if err := json.Unmarshal(data, &remote); err != nil {
-		return fmt.Errorf("parse bookmarks.json: %w", err)
-	}
-	return writeAtomic(path, remote)
+	// empty base: nothing counts as deleted, so both sides' bookmarks are kept.
+	// This device's extras reach the repo on the next sync (they look added locally vs HEAD).
+	return writeAtomic(path, merge(Profile{}, local, remote))
 }

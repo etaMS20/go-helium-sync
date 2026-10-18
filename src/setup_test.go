@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// first device -> adopt (after deleting the clone) -> refuse, against a local bare repo as remote
+// first device -> join (after deleting the clone) -> refuse, against a local bare repo as remote
 func TestSetup(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
@@ -61,7 +61,7 @@ func TestSetup(t *testing.T) {
 		t.Errorf("bookmarks.json checksum = %q, want empty", got.CheckSum)
 	}
 
-	// adopt: fresh clone, different local bookmarks must be replaced by the remote's
+	// join: fresh clone, different local bookmarks are merged with the remote's
 	if err := os.RemoveAll(dir); err != nil {
 		t.Fatal(err)
 	}
@@ -72,10 +72,12 @@ func TestSetup(t *testing.T) {
 		t.Fatal(err)
 	}
 	if up, err := git(dir, "rev-parse", "--abbrev-ref", "main@{upstream}"); err != nil || up != "origin/main" {
-		t.Errorf("adopt: main upstream = %q (err %v), want origin/main", up, err)
+		t.Errorf("join: main upstream = %q (err %v), want origin/main", up, err)
 	}
-	if got := loadProfile(t, bm); !reflect.DeepEqual(got, want) {
-		t.Error("adopted Bookmarks differ from the first device's")
+	second := loadProfile(t, "../testdata/01.json")
+	second.CheckSum = ""
+	if got := loadProfile(t, bm); !reflect.DeepEqual(got, merge(Profile{}, second, want)) {
+		t.Error("joined Bookmarks aren't the merge of both devices")
 	}
 	assertJSONDeepEqual(t, "backup", mustReadFile(t, "../testdata/01.json"), mustReadFile(t, bm+".gosync.bak"))
 

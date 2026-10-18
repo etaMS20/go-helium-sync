@@ -8,7 +8,7 @@ Helium (Chromium-based) stores bookmarks in `~/.config/net.imput.helium/Default/
     flowchart LR
         A{Helium closed?} -->|no| X[abort]
         A -->|yes| B[read Bookmarks + backup]
-        B --> C[git pull]
+        B --> C[git fetch]
         C --> D[3-way merge by guid<br/>base = last sync]
         D --> E[atomic write]
         E --> F[git commit + push]
@@ -18,10 +18,16 @@ Inspired by [aadarwal/helium-sync](https://github.com/aadarwal/helium-sync) (mac
 
 ## Usage
 
-Close Helium first, then:
+Close Helium first, then once per device:
 
 ```sh
-go run ./src
+go run ./src setup <remote-url>   # first device seeds the repo, later ones merge into it
+```
+
+and to sync:
+
+```sh
+go run ./src sync
 ```
 
 ## Tests
