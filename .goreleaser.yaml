@@ -13,7 +13,7 @@ archives:
 nfpms:
   - package_name: hesync
     homepage: https://github.com/etams20/go-helium-sync
-    maintainer: etams20 <m.schaedle@proton.me>
+    maintainer: etams20 <malvin.schaedle@gmail.com>
     description: Sync Helium browser bookmarks between Linux machines via git.
     license: MIT
     formats: [deb, rpm]
