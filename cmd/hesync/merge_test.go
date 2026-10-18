@@ -64,7 +64,7 @@ func TestMerge(t *testing.T) {
 		{"unchanged", bar(a, b), bar(a, b), bar(a, b), "bar[a b] other[]"},
 		{"add local", bar(a, b), bar(a, b, c), bar(a, b), "bar[a b c] other[]"},
 		{"add remote", bar(a, b), bar(a, b), bar(a, b, c), "bar[a b c] other[]"},
-		{"add both", bar(a), bar(a, b), bar(a, c), "bar[a b c] other[]"},
+		{"add both: remote first, then local", bar(a), bar(a, b), bar(a, c), "bar[a c b] other[]"},
 		{"delete local", bar(a, b), bar(a), bar(a, b), "bar[a] other[]"},
 		{"delete remote", bar(a, b), bar(a, b), bar(a), "bar[a] other[]"},
 		{"edit local beats delete remote", bar(a, b), bar(a, bm("b", "B")), bar(a), "bar[a B] other[]"},
@@ -75,6 +75,8 @@ func TestMerge(t *testing.T) {
 		{"reorder local", bar(a, b), bar(b, a), bar(a, b), "bar[b a] other[]"},
 		{"reorder remote", bar(a, b), bar(a, b), bar(b, a), "bar[b a] other[]"},
 		{"reorder remote + add local", bar(a, b), bar(a, b, c), bar(b, a), "bar[b a c] other[]"},
+		{"reorder remote + add local first", bar(a, b, c), bar(bm("d"), a, b, c), bar(c, b, a), "bar[d c b a] other[]"},
+		{"reorder remote + add local after a", bar(a, b, c), bar(a, bm("d"), b, c), bar(c, b, a), "bar[c b a d] other[]"},
 		{"reorder both: local wins", bar(a, b, c), bar(c, a, b), bar(b, c, a), "bar[c a b] other[]"},
 		{"move out locally keeps remote reorder",
 			bar(folder("f", a, b, c)), bar(folder("f", a, c), b), bar(folder("f", c, b, a)),
@@ -82,6 +84,9 @@ func TestMerge(t *testing.T) {
 		{"orphan goes to Other",
 			bar(folder("f", a)), bar(folder("f", a, c)), bar(),
 			"bar[] other[c]"},
+		{"folders moved into each other go to Other",
+			bar(folder("f"), folder("g")), bar(folder("g", folder("f"))), bar(folder("f", folder("g"))),
+			"bar[] other[g[f[]]]"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

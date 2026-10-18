@@ -2,33 +2,60 @@ package main
 
 import (
 	"cmp"
+	"maps"
 	"slices"
 )
 
-/**
- * 3-way merge of bookmark trees: flatten, merge per GUID, rebuild.
- *
- * Each tree (base = last sync, local = Helium, remote = after git pull) is flattened into GUID -> entry.
- * Entries are merged per GUID, then regrouped by parent and sorted by pos.
- *
- *   base  local  remote | result
- *   ✓     ✓      ✓      | per field (name, url, parent): local changed vs base ? local : remote
- *   -     ✓      -      | added locally -> local
- *   -     -      ✓      | added remotely -> remote
- *   -     ✓      ✓      | added on both -> local
- *   ✓     -      ✓      | deleted locally -> gone, unless remote edited it
- *   ✓     ✓      -      | deleted remotely -> gone, unless local edited it
- *
- * Order is decided per folder: if local reordered a folder, local's order wins, else remote's.
- * Orphans (parent deleted on the other side) go to Other. Equal pos ties break by GUID.
- */
+// Merging the bookmarks of two devices.
+//
+// During a sync, there are three versions of the bookmarks:
+//
+//   - base:   what both devices agreed on at the last sync
+//   - local:  what Helium on this device has right now
+//   - remote: what the other device pushed since the last sync
+//
+// Comparing local and remote alone isn't enough. If a bookmark is here but
+// not on the other device, was it added here, or was it deleted on the
+// other device? base tells: if base doesn't have it, it's new, otherwise
+// it was deleted over there.
+//
+// Trees are awkward to compare, so the merge works in three steps:
+//
+//  1. flatten each tree into a map of items by GUID, where each item
+//     remembers its folder and its position in that folder
+//  2. decide for each item what survives (see merge)
+//  3. rebuild a tree from the result
+//
+// Example: "GitHub" is renamed to "GH" on the laptop while "Hacker News" is
+// added on the desktop. After both have synced, both have "GH" and
+// "Hacker News".
 
+// Entry is one bookmark or folder taken out of the tree. Instead of holding
+// its children, it remembers where it lives:
+//
+//	{node: "Go Packages", parent: <GUID of the "Go" folder>, pos: 1}
+//
+// means "the second item in the Go folder".
 type Entry struct {
 	node   Node   // node with Children = nil
 	parent string // parent folder's GUID
 	pos    int    // index inside the parent
 }
 
+// flatten turns a bookmark tree into a map from GUID to Entry:
+//
+//	Bookmarks bar
+//	├── GitHub
+//	└── Go
+//	    └── go.dev
+//
+// becomes
+//
+//	"github" → {GitHub, parent: "bar", pos: 0}
+//	"go"     → {Go,     parent: "bar", pos: 1}
+//	"godev"  → {go.dev, parent: "go",  pos: 0}
+//
+// The three root folders (bar, Other, Mobile) aren't in the map, they always exist.
 func flatten(p Profile) map[string]Entry {
 	m := make(map[string]Entry)
 
@@ -38,6 +65,7 @@ func flatten(p Profile) map[string]Entry {
 	return m
 }
 
+// walk adds everything below parent to m, going into subfolders too.
 func walk(parent *Node, m map[string]Entry) {
 	for i, c := range parent.Children {
 		n := *c          // copy the node first to not change the original tree
@@ -47,17 +75,15 @@ func walk(parent *Node, m map[string]Entry) {
 	}
 }
 
-/**
- * Rebuilds from a flat-map into a Profile skeleton
- * Example. m has these entries:
- * "a" → {node: GitHub,  parent: "bar",    pos: 0}
- * "b" → {node: Work,    parent: "bar",    pos: 1}
- * "c" → {node: Jira,    parent: "b",      pos: 0}
- *
- * After the loop, byParent looks like this:
- * "bar" → [GitHub, Work]   // what's directly in the bookmark bar
- * "b"   → [Jira]           // what's inside the "Work" folder
- */
+// rebuild is the reverse of flatten: it turns the map back into a tree.
+// skel provides the root folders, whose contents are replaced.
+//
+// It first groups the items by folder and sorts each group by position:
+//
+//	"bar" → [GitHub, Go]
+//	"go"  → [go.dev]
+//
+// and then fills each root folder from those groups, folder by folder.
 func rebuild(skel Profile, m map[string]Entry) Profile {
 	byParent := make(map[string][]Entry) // children looked up by parent GUID
 	for _, e := range m {
@@ -74,14 +100,9 @@ func rebuild(skel Profile, m map[string]Entry) Profile {
 	return skel
 }
 
-// attach rebuilds the subtree under n from byParent, recursively.
-// It replaces n's existing children with copies of the nodes listed
-// under n.GUID, in the order they appear there, and repeats this for
-// each child. byParent maps a parent GUID to its children and must
-// already be sorted.
-//
-// Entries not reachable from n are ignored. byParent itself is not
-// modified.
+// attach fills folder n with its children from byParent (already sorted),
+// then does the same for each child. Whatever n held before is dropped.
+// Items that aren't somewhere inside n are ignored. byParent isn't modified.
 func attach(n *Node, byParent map[string][]Entry) {
 	n.Children = nil // drop any children from the skeleton so nothing is duplicated
 	if n.Type == TypeFolder {
@@ -94,24 +115,28 @@ func attach(n *Node, byParent map[string][]Entry) {
 	}
 }
 
-// Implementation of the 3-way merge
+// merge combines the bookmarks of both devices (see the top of this file for
+// base, local and remote). For each item it checks which versions have it:
 //
-// base: the state at the last sync, meaning bookmarks.json in the clone before git pull.
-// local: Helium on this machine right now, incl. changes
-// remote: bookmarks.json after git pull, meaning what the other machine pushed since then.
+//   - New on one device (not in base): keep it.
+//   - Gone on one device, still on the other: the first device deleted it, so
+//     it's removed. Unless the other device changed it since (renamed it,
+//     changed the URL or moved it): then it's kept, so no edit gets lost.
+//   - On both devices: name, URL and folder are each taken from whichever
+//     device changed them. If both changed the same thing, this device wins.
+//     Example: "GitHub" is renamed to "GH" here and moved into "Dev" on the
+//     desktop. The result is "GH" inside "Dev".
+//   - Only in base: deleted on both devices, nothing to do.
 //
-// base is needed to know who changes what (common ancestor lookup)
-// E.g. bookmark X exists in local but not in remote:
-// -> Did we add it here? Then keep it.
-// -> Or did the other machine delete it? Then remove it.
-// Both cases look identical but base can answer it
+// After that it decides the order inside each folder, and makes sure nothing
+// ended up inside a folder that no longer exists.
 func merge(base, local, remote Profile) Profile {
 	b, l, r := flatten(base), flatten(local), flatten(remote)
 	out := make(map[string]Entry)
 
-	// GUIDs that exist on at least one side. Base-only GUIDs were
-	// deleted on both sides and are skipped on purpose.
-	guids := make(map[string]bool, len(l)+len(r)) // map of guid -> an whether they exist in local or remote
+	// Every GUID on at least one device. Ones only in base were deleted on
+	// both devices and are skipped on purpose.
+	guids := make(map[string]bool, len(l)+len(r))
 	for g := range l {
 		guids[g] = true
 	}
@@ -140,49 +165,93 @@ func merge(base, local, remote Profile) Profile {
 		}
 	}
 
-	// Sibling order: per folder, take the pos from local if local reordered
-	// that folder, else from remote. Entries the winning side doesn't have
-	// in that folder keep the other side's pos.
-	// ponytail: those entries' pos comes from the other side's numbering, so
-	// they can land a slot off. Fine for a single user.
+	// Order inside each folder. If the folder was rearranged on this device,
+	// this device's order wins, otherwise the other device's order is used.
+	// Items the winning order doesn't know (they were only added or moved
+	// there on the other device) are slotted in:
+	//
+	//   - right after the item they came after on their own device
+	//   - first, if they came before every item both devices have
+	//   - last, if they came after every item both devices have
+	//
+	// Example: the bar was reversed to [c b a] on the desktop, and d was added
+	// right after a here: [a d b c]. The result is [c b a d], d still follows a.
 	localReordered := reordered(b, l)
+	byParent := make(map[string][]string)
 	for g, e := range out {
+		byParent[e.parent] = append(byParent[e.parent], g)
+	}
+	for p, gs := range byParent {
 		win, other := r, l
-		if localReordered[e.parent] {
+		if localReordered[p] {
 			win, other = l, r
 		}
-		if w, ok := win[g]; ok && w.parent == e.parent {
-			e.pos = w.pos
-		} else if o, ok := other[g]; ok && o.parent == e.parent {
-			e.pos = o.pos
+		order, others := sideOrder(win, gs, p), sideOrder(other, gs, p)
+		tail := len(others) // others[tail:] come after every shared entry: they stay last
+		for tail > 0 && !slices.Contains(order, others[tail-1]) {
+			tail--
 		}
-		out[g] = e
+		at := 0 // insert point: right after the last shared entry seen so far
+		for _, g := range others[:tail] {
+			if i := slices.Index(order, g); i >= 0 {
+				at = i + 1
+				continue
+			}
+			order = slices.Insert(order, at, g)
+			at++
+		}
+		order = append(order, others[tail:]...)
+		for i, g := range order {
+			e := out[g]
+			e.pos = i
+			out[g] = e
+		}
 	}
 
-	// Orphans: an entry whose parent folder was deleted on the other side
-	// would never be reached by rebuild and silently vanish. Move it to Other.
-	// ponytail: misses cycles (A moved into B locally, B into A remotely),
-	// switch to a reachable-from-root walk if that ever happens.
+	// Make sure every item stays visible. rebuild only finds items by going
+	// down from the root folders, so an item whose folders don't lead back up
+	// to a root would silently disappear. That happens when:
+	//
+	//   - its folder was deleted on the other device, or
+	//   - two folders were moved into each other: A into B here, B into A on
+	//     the other device. Now A is in B and B is in A, and neither is in a root.
+	//
+	// So for each item, follow its folders upwards. Where that breaks, move
+	// the item (with everything inside it) to "Other bookmarks". Items are
+	// checked in GUID order, so both devices break such a loop at the same folder.
 	roots := make(map[string]bool)
 	for _, n := range rootsOf(&local) {
 		roots[n.GUID] = true
 	}
-	for g, e := range out {
-		if _, ok := out[e.parent]; !ok && !roots[e.parent] {
-			e.parent = local.Roots.Other.GUID
-			out[g] = e
+	for _, g := range slices.Sorted(maps.Keys(out)) {
+		seen := make(map[string]bool)
+		for c := g; !roots[c]; {
+			seen[c] = true
+			p := out[c].parent
+			if _, ok := out[p]; !roots[p] && (!ok || seen[p]) {
+				e := out[c]
+				e.parent = local.Roots.Other.GUID
+				out[c] = e
+				break
+			}
+			c = p
 		}
 	}
 	return rebuild(local, out)
 }
 
-// siblingOrder sorts by pos, ties broken by GUID so every machine gets the same order.
+// siblingOrder sorts items by position. Two items with the same position are
+// sorted by GUID, so every device ends up with the same order.
 func siblingOrder(a, b Entry) int {
 	return cmp.Or(cmp.Compare(a.pos, b.pos), cmp.Compare(a.node.GUID, b.node.GUID))
 }
 
-// pick returns the side that changed relative to base.
-// If both changed, local wins.
+// pick returns whichever of local and remote differs from base.
+// If both changed, local wins:
+//
+//	pick("GitHub", "GH", "GitHub")   // "GH": changed here
+//	pick("GitHub", "GitHub", "Code") // "Code": changed on the other device
+//	pick("GitHub", "GH", "Code")     // "GH": changed on both, this device wins
 func pick[T comparable](base, local, remote T) T {
 	if local == base {
 		return remote
@@ -190,18 +259,22 @@ func pick[T comparable](base, local, remote T) T {
 	return local
 }
 
-// edited reports whether e differs from base in content or folder.
-// pos is deliberately ignored: it shifts whenever a sibling is added
-// or removed, which is not an edit of e itself.
+// edited reports whether the item was changed since base: renamed, given a
+// new URL or moved to another folder. A new position doesn't count, it shifts
+// whenever something above it is added or removed.
 func edited(base, e Entry) bool {
 	return e.node.Name != base.node.Name ||
 		e.node.URL != base.node.URL ||
 		e.parent != base.parent
 }
 
-// reordered returns the folders whose children local rearranged vs base.
-// Only entries that stayed in the same folder are compared, so adds,
-// deletes and moves in or out don't count as a reorder.
+// reordered returns the folders whose order was changed on this device.
+// It only compares items that were in the folder before and still are, so
+// adding, deleting or moving something in or out isn't a reorder:
+//
+//	base [a b c] → local [a c]   not reordered (b was removed)
+//	base [a b c] → local [a b d] not reordered (c removed, d added)
+//	base [a b c] → local [c a b] reordered
 func reordered(b, l map[string]Entry) map[string]bool {
 	bSib, lSib := make(map[string][]Entry), make(map[string][]Entry)
 	for g, le := range l {
@@ -221,8 +294,27 @@ func reordered(b, l map[string]Entry) map[string]bool {
 	return out
 }
 
-// merge3 combines the content of an entry that exists in base, local and remote.
-// pos is set later, per folder, in merge.
+// sideOrder returns those GUIDs from gs that side has inside folder p, in the
+// order side has them. Example: side's folder holds [x b a] and gs is
+// [a b c]: the result is [b a].
+func sideOrder(side map[string]Entry, gs []string, p string) []string {
+	var es []Entry
+	for _, g := range gs {
+		if e, ok := side[g]; ok && e.parent == p {
+			es = append(es, e)
+		}
+	}
+	slices.SortFunc(es, siblingOrder)
+	out := make([]string, len(es))
+	for i, e := range es {
+		out[i] = e.node.GUID
+	}
+	return out
+}
+
+// merge3 combines an item that's in base and on both devices. Name, URL and
+// folder are each picked on their own (see pick), so a rename here and a move
+// on the other device both survive. The position is decided later, in merge.
 func merge3(b, l, r Entry) Entry {
 	out := l
 	out.node.Name = pick(b.node.Name, l.node.Name, r.node.Name)
@@ -231,7 +323,7 @@ func merge3(b, l, r Entry) Entry {
 	return out
 }
 
-// rootsOf returns pointers to the three root folders of p.
+// rootsOf returns the three root folders of p: bookmark bar, Other and Mobile.
 func rootsOf(p *Profile) []*Node {
 	return []*Node{&p.Roots.BookmarkBar, &p.Roots.Other, &p.Roots.Synced}
 }
