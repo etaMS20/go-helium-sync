@@ -45,7 +45,7 @@ func TestRoundTrip(t *testing.T) {
 func TestWriteAtomicSuccess(t *testing.T) {
 	dir := t.TempDir() // Create a temporary directory for the test
 	path := filepath.Join(dir, bookmarksFile)
-	const src = "testdata/09.json"
+	const src = "testdata/laptop.json"
 
 	// Write some data to the file, it only exists to be overwritten by the atomic write
 	if err := os.WriteFile(path, []byte(`{"old": true}`), 0o600); err != nil {

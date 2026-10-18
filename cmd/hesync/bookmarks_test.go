@@ -14,14 +14,14 @@ func TestCountURLs(t *testing.T) {
 }
 
 func TestFindByGUID(t *testing.T) {
-	p := loadProfile(t, "testdata/09.json")
+	p := loadProfile(t, "testdata/laptop.json")
 	tests := []struct {
 		name string
 		guid string
 		want *string // a pointer to a string can be nil
 	}{
-		{"should find nested url", "62466a5b-b2b1-4d3e-8ff4-326fbc2776e0", new("httpbin.org")},
-		{"should find folder", "2a76546f-46e4-4e6c-ac49-0e211048ee63", new("Test Folder")},
+		{"should find nested url", "c6c44952-8bd6-48de-ba7f-ba78136cac7e", new("Go Packages")},
+		{"should find folder", "06b75729-b892-4266-a80c-4b31b364a353", new("Go")},
 		{"should find nothing", "asd", nil},
 	}
 

@@ -30,11 +30,11 @@ func TestSetup(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(bm), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	seed := mustReadFile(t, "testdata/00.json")
+	seed := mustReadFile(t, "testdata/laptop.json")
 	if err := os.WriteFile(bm, seed, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	want := loadProfile(t, "testdata/00.json")
+	want := loadProfile(t, "testdata/laptop.json")
 	want.CheckSum = ""
 
 	dir, err := dataDir()
@@ -65,7 +65,7 @@ func TestSetup(t *testing.T) {
 	if err := os.RemoveAll(dir); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(bm, mustReadFile(t, "testdata/01.json"), 0o600); err != nil {
+	if err := os.WriteFile(bm, mustReadFile(t, "testdata/desktop.json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := setup(remote); err != nil {
@@ -74,12 +74,12 @@ func TestSetup(t *testing.T) {
 	if up, err := git(dir, "rev-parse", "--abbrev-ref", "main@{upstream}"); err != nil || up != "origin/main" {
 		t.Errorf("join: main upstream = %q (err %v), want origin/main", up, err)
 	}
-	second := loadProfile(t, "testdata/01.json")
+	second := loadProfile(t, "testdata/desktop.json")
 	second.CheckSum = ""
 	if got := loadProfile(t, bm); !reflect.DeepEqual(got, merge(Profile{}, second, want)) {
 		t.Error("joined Bookmarks aren't the merge of both devices")
 	}
-	assertJSONDeepEqual(t, "backup", mustReadFile(t, "testdata/01.json"), mustReadFile(t, bm+".gosync.bak"))
+	assertJSONDeepEqual(t, "backup", mustReadFile(t, "testdata/desktop.json"), mustReadFile(t, bm+".gosync.bak"))
 
 	// third run refuses
 	if err := setup(remote); err == nil || !strings.Contains(err.Error(), "already set up") {
