@@ -7,7 +7,7 @@ import (
 )
 
 func TestFlattenRebuild(t *testing.T) {
-	files, _ := filepath.Glob("../testdata/*.json")
+	files, _ := filepath.Glob("testdata/*.json")
 	for _, file := range files {
 		t.Run(filepath.Base(file), func(t *testing.T) {
 			p := loadProfile(t, file)

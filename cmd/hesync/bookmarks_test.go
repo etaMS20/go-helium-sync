@@ -14,7 +14,7 @@ func TestCountURLs(t *testing.T) {
 }
 
 func TestFindByGUID(t *testing.T) {
-	p := loadProfile(t, "../testdata/09.json")
+	p := loadProfile(t, "testdata/09.json")
 	tests := []struct {
 		name string
 		guid string

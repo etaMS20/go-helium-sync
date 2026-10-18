@@ -28,7 +28,7 @@ func runSync() error {
 	if err != nil {
 		return err
 	}
-	if _, err := git(dir, "fetch", "origin", "main"); err != nil {
+	if _, err := git(dir, "fetch", "-q", "origin", "main"); err != nil {
 		return err
 	}
 	remote, err := gitProfile(dir, "origin/main")
@@ -57,10 +57,10 @@ func runSync() error {
 	if changed == "" {
 		return nil // remote already has exactly this, nothing to push
 	}
-	if _, err := git(dir, "commit", "-am", "sync"); err != nil {
+	if _, err := git(dir, "commit", "-q", "-am", "sync"); err != nil {
 		return err
 	}
-	_, err = git(dir, "push", "origin", "main")
+	_, err = git(dir, "push", "-q", "origin", "main")
 	return err
 }
 

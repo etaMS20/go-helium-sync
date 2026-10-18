@@ -12,7 +12,7 @@ const bookmarksFile string = "Bookmarks"
 
 // Tests the round-trip of unmarshalling and encoding JSON data to ensure that the process is lossless
 func TestRoundTrip(t *testing.T) {
-	files, err := filepath.Glob("../testdata/*.json")
+	files, err := filepath.Glob("testdata/*.json")
 	if err != nil {
 		t.Fatalf("Error occurred while globbing JSON files: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestRoundTrip(t *testing.T) {
 func TestWriteAtomicSuccess(t *testing.T) {
 	dir := t.TempDir() // Create a temporary directory for the test
 	path := filepath.Join(dir, bookmarksFile)
-	const src = "../testdata/09.json"
+	const src = "testdata/09.json"
 
 	// Write some data to the file, it only exists to be overwritten by the atomic write
 	if err := os.WriteFile(path, []byte(`{"old": true}`), 0o600); err != nil {
