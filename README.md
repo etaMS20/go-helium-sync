@@ -27,7 +27,7 @@ sudo apt install ./hesync_*_linux_amd64.deb
 or with Go:
 
 ```sh
-go install github.com/etams20/go-helium-sync/cmd/hesync@latest
+go install github.com/etaMS20/go-helium-sync/cmd/hesync@latest
 ```
 
 ## Usage
