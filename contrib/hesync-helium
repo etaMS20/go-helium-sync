@@ -1,0 +1,11 @@
+#!/bin/sh
+# Starts Helium, syncing bookmarks before it opens and after it closes.
+# Expects Helium at /usr/bin/helium (native package); adjust for AppImage/Flatpak.
+lock="${XDG_CONFIG_HOME:-$HOME/.config}/net.imput.helium/SingletonLock"
+
+# already open: this launch only opens a new window, the first one does the syncing
+[ -L "$lock" ] && exec /usr/bin/helium "$@"
+
+hesync sync || notify-send hesync "sync before start failed"
+/usr/bin/helium "$@"
+hesync sync || notify-send hesync "sync after close failed"

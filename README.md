@@ -44,6 +44,22 @@ and to sync:
 hesync sync
 ```
 
+## Automatic sync
+
+[`contrib/hesync-helium`](contrib/hesync-helium) starts Helium, syncing before it opens and after it closes.
+To launch Helium through it from the app menu:
+
+```sh
+curl -fsSLo ~/.local/bin/hesync-helium https://raw.githubusercontent.com/etams20/go-helium-sync/main/contrib/hesync-helium
+chmod +x ~/.local/bin/hesync-helium
+sed "s|^Exec=helium %U|Exec=$HOME/.local/bin/hesync-helium %U|" \
+  /usr/share/applications/helium.desktop > ~/.local/share/applications/helium.desktop
+```
+
+This overrides the system entry. Typing `helium` in a terminal is unaffected.
+
+To undo: `rm ~/.local/share/applications/helium.desktop ~/.local/bin/hesync-helium`.
+
 ## Releasing
 
 ```sh
