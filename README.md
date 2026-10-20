@@ -35,8 +35,12 @@ go install github.com/etaMS20/go-helium-sync/cmd/hesync@latest
 Close Helium first, then once per device:
 
 ```sh
-hesync setup <remote-url>   # first device seeds the repo, later ones merge into it
+hesync setup                # guided: creates/finds a private GitHub repo via gh, or asks for a URL
+hesync setup <remote-url>   # or use an existing empty private repo
 ```
+
+The first device seeds the repo, later ones merge into it.
+Without [`gh`](https://cli.github.com), create an empty private repo yourself (GitHub, GitLab, ...) first.
 
 and to sync:
 

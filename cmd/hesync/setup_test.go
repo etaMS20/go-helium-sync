@@ -42,6 +42,14 @@ func TestSetup(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// unreachable remote: fails before creating the data dir, so setup can be re-run
+	if err := setup(filepath.Join(tmp, "missing.git")); err == nil {
+		t.Fatal("setup with missing remote succeeded")
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("data dir left behind after failed setup (stat err %v)", err)
+	}
+
 	// first device: seeds the remote
 	if err := setup(remote); err != nil {
 		t.Fatal(err)

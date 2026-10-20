@@ -7,15 +7,19 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("usage: hesync setup <remote-url> | sync")
+		log.Fatal("usage: hesync setup [remote-url] | sync")
 	}
 	var err error
 	switch os.Args[1] {
 	case "setup":
-		if len(os.Args) != 3 {
-			log.Fatal("usage: hesync setup <remote-url>")
+		if len(os.Args) > 3 {
+			log.Fatal("usage: hesync setup [remote-url]")
 		}
-		err = setup(os.Args[2])
+		url := "" // empty: setup asks for it
+		if len(os.Args) == 3 {
+			url = os.Args[2]
+		}
+		err = setup(url)
 	case "sync":
 		err = runSync()
 	default:

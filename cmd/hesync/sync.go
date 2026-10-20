@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 )
 
@@ -11,15 +13,18 @@ import (
 // fetch + `git show` instead of `git pull`: base and remote are read straight from
 // git, so an earlier failed push can never leave a merge conflict in bookmarks.json.
 func runSync() error {
+	dir, err := dataDir()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
+		return errors.New("not set up yet, run: hesync setup [remote-url]")
+	}
 	path, err := heliumPath("Default/Bookmarks") // get the path to the Profile file
 	if err != nil {
 		return err
 	}
 	local, err := readHelium(path) // fails if Helium is running, writes a backup
-	if err != nil {
-		return err
-	}
-	dir, err := dataDir()
 	if err != nil {
 		return err
 	}
