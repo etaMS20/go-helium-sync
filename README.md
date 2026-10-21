@@ -40,6 +40,7 @@ hesync setup <remote-url>   # or provide an existing private repo
 ```
 
 The first device seeds the repo, later ones merge into it.
+Only Helium's `Default` profile is synced; other profiles stay local.
 Without [`gh`](https://cli.github.com), create a private repo yourself (GitHub, GitLab, ...) first.
 
 hesync only reads and writes `bookmarks.json` on the `main` branch. Other files (README, LICENSE, ...)
