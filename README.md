@@ -51,6 +51,53 @@ and to sync:
 hesync sync
 ```
 
+## How Bookmarks are synced
+
+Each sync compares three versions of every bookmark and folder, matched by `guid`:
+
+- **base**: the repo as this device left it at its last sync
+- **this device**: Helium's bookmarks right now
+- **other device**: the repo now, which is still base unless another device synced in between
+
+"Changed" means renamed, new URL, or moved to another folder.
+If `base` and `other device` are identical this device's changes are simply pushed.
+
+<details>
+<summary><b>Behavior matrix</b></summary>
+
+| This device | Other device             | Result                                              |
+| ----------- | ------------------------ | --------------------------------------------------- |
+| unchanged   | unchanged                | unchanged                                           |
+| added       | –                        | kept                                                |
+| –           | added                    | kept                                                |
+| changed     | unchanged                | this device's version                               |
+| unchanged   | changed                  | other device's version                              |
+| changed     | changed, different field | both changes kept (e.g. renamed here + moved there) |
+| changed     | changed, same field      | **this device wins**                                |
+| deleted     | unchanged                | deleted                                             |
+| unchanged   | deleted                  | deleted                                             |
+| deleted     | changed                  | kept, with the other device's change                |
+| changed     | deleted                  | kept, with this device's change                     |
+| deleted     | deleted                  | deleted                                             |
+
+Order inside a folder:
+
+| This device   | Other device | Result               |
+| ------------- | ------------ | -------------------- |
+| not reordered | any          | other device's order |
+| reordered     | any          | this device's order  |
+
+Adding, removing or moving items in or out of a folder doesn't count as reordering.
+Items only the losing order knows about are slotted in after the same neighbour they followed there.
+
+Edge cases:
+
+- If an item's folder was deleted on the other device, or two folders were moved into each other on different devices,
+  the item is moved to **Other bookmarks** instead of being lost.
+- On first `setup` of a device, nothing counts as deleted: bookmarks from both sides are kept.
+
+</details>
+
 ## Automatic sync
 
 [`contrib/hesync-helium`](contrib/hesync-helium) starts Helium, syncing before it opens and after it closes.
