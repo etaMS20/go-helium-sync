@@ -40,7 +40,6 @@ hesync setup <remote-url>   # or provide an existing private repo
 ```
 
 The first device seeds the repo, later ones merge into it.
-Only Helium's `Default` profile is synced; other profiles stay local.
 Without [`gh`](https://cli.github.com), create a private repo yourself (GitHub, GitLab, ...) first.
 
 hesync only reads and writes `bookmarks.json` on the `main` branch. Other files (README, LICENSE, ...)
@@ -98,6 +97,13 @@ Edge cases:
 - On first `setup` of a device, nothing counts as deleted: bookmarks from both sides are kept.
 
 </details>
+
+## Limitations
+
+- **Helium must be closed** while syncing. Chromium keeps bookmarks in memory and overwrites the file on exit,
+  so changes written while it runs would be lost. Syncing a running browser would need an extension using the bookmarks API.
+  [Automatic sync](#automatic-sync) works around this by syncing before Helium starts and after it closes.
+- **Only the `Default` profile is synced.** Other profiles stay local.
 
 ## Automatic sync
 
