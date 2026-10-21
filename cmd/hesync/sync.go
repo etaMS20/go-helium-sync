@@ -18,7 +18,7 @@ func runSync() error {
 		return err
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
-		return errors.New("not set up yet, run: hesync setup [remote-url]")
+		return errors.New("not set up yet, run: hesync setup")
 	}
 	path, err := heliumPath("Default/Bookmarks") // get the path to the Profile file
 	if err != nil {

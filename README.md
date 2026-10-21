@@ -35,8 +35,8 @@ go install github.com/etaMS20/go-helium-sync/cmd/hesync@latest
 Close Helium first, then once per device:
 
 ```sh
-hesync setup                # guided: creates/finds a private GitHub repo via gh, or asks for a URL
-hesync setup <remote-url>   # or provide an existing private repo
+hesync setup                      # guided: creates/finds a private GitHub repo via gh, or asks for a URL
+hesync setup --url <remote-url>   # or use an existing private repo
 ```
 
 The first device seeds the repo, later ones merge into it.
@@ -50,6 +50,8 @@ and to sync:
 ```sh
 hesync sync
 ```
+
+`hesync --help` lists all commands, `hesync version` shows the installed version.
 
 ## How Bookmarks are synced
 
