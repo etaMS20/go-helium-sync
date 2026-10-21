@@ -36,11 +36,14 @@ Close Helium first, then once per device:
 
 ```sh
 hesync setup                # guided: creates/finds a private GitHub repo via gh, or asks for a URL
-hesync setup <remote-url>   # or use an existing empty private repo
+hesync setup <remote-url>   # or provide an existing private repo
 ```
 
 The first device seeds the repo, later ones merge into it.
-Without [`gh`](https://cli.github.com), create an empty private repo yourself (GitHub, GitLab, ...) first.
+Without [`gh`](https://cli.github.com), create a private repo yourself (GitHub, GitLab, ...) first.
+
+hesync only reads and writes `bookmarks.json` on the `main` branch. Other files (README, LICENSE, ...)
+are left alone, so the repo doesn't have to be empty, but `bookmarks.json` must not already be in use by something else.
 
 and to sync:
 

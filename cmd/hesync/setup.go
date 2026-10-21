@@ -21,7 +21,7 @@ func dataDir() (string, error) {
 	return filepath.Join(home, ".local", "share", "go-helium-sync"), nil
 }
 
-func setup(remoteURL string) error {
+func setup(remoteURL string) (err error) {
 	path, err := heliumPath("Default/Bookmarks")
 	if err != nil {
 		return err
@@ -57,12 +57,18 @@ func setup(remoteURL string) error {
 	if err != nil {
 		return fmt.Errorf("can't reach %s (does the repo exist?): %w", remoteURL, err)
 	}
-	firstDevice := out == ""
+	seed := out == ""
 
 	err = os.MkdirAll(dir, 0o700) // 0o700 = octal perms: owner rwx, group/others none (private data)
 	if err != nil {
 		return err
 	}
+	// a failure past this point would leave .git behind and block re-running setup
+	defer func() {
+		if err != nil {
+			os.RemoveAll(filepath.Join(dir, ".git"))
+		}
+	}()
 
 	if _, err = git(dir, "init", "-b", "main"); err != nil {
 		return err
@@ -71,8 +77,24 @@ func setup(remoteURL string) error {
 		return err
 	}
 
-	if firstDevice {
-		// seed the repo with this device's bookmarks - write the local Profile into bookmarks.json
+	if !seed {
+		if _, err := git(dir, "fetch", "origin", "main"); err != nil {
+			return err
+		}
+		// local main = remote main, with tracking so later pull/push work.
+		if _, err := git(dir, "checkout", "-B", "main", "origin/main"); err != nil {
+			return err
+		}
+		// main without bookmarks.json (e.g. GitHub's "Add a README"): seed on top of it
+		out, err := git(dir, "ls-tree", "--name-only", "origin/main", "bookmarks.json")
+		if err != nil {
+			return err
+		}
+		seed = out == ""
+	}
+
+	if seed {
+		// first device: seed the repo with this device's bookmarks
 		if err := writeAtomic(filepath.Join(dir, "bookmarks.json"), local); err != nil {
 			return err
 		}
@@ -87,13 +109,6 @@ func setup(remoteURL string) error {
 	}
 
 	// join: remote already has bookmarks, merge this device's into them.
-	if _, err := git(dir, "fetch", "origin", "main"); err != nil {
-		return err
-	}
-	// local main = remote main, with tracking so later pull/push work.
-	if _, err := git(dir, "checkout", "-B", "main", "origin/main"); err != nil {
-		return err
-	}
 	remote, err := gitProfile(dir, "origin/main")
 	if err != nil {
 		return err
@@ -122,7 +137,7 @@ func askRemote() (string, error) {
 		}
 	}
 
-	fmt.Println("Create an empty private git repo (GitHub, GitLab, ...) and paste its URL.")
+	fmt.Println("Create a private git repo (GitHub, GitLab, ...) and paste its URL.")
 	if u := ask("Remote URL: "); u != "" {
 		return u, nil
 	}

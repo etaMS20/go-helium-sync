@@ -94,3 +94,75 @@ func TestSetup(t *testing.T) {
 		t.Errorf("third run err = %v, want already set up", err)
 	}
 }
+
+// remote main without bookmarks.json (GitHub "Add a README") is seeded on top;
+// a broken bookmarks.json fails setup without leaving .git behind
+func TestSetupNonEmptyRemote(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
+	for _, k := range []string{"GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"} {
+		t.Setenv(k, "test")
+	}
+
+	remote := filepath.Join(tmp, "remote.git")
+	if _, err := git(tmp, "init", "--bare", "-b", "main", remote); err != nil {
+		t.Fatal(err)
+	}
+	// push a commit to the remote containing only the given file
+	other := filepath.Join(tmp, "other")
+	pushFile := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(other, name), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		for _, args := range [][]string{{"add", name}, {"commit", "-m", name}, {"push", "origin", "main"}} {
+			if _, err := git(other, args...); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if _, err := git(tmp, "clone", remote, other); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := git(other, "checkout", "-b", "main"); err != nil {
+		t.Fatal(err)
+	}
+	pushFile("README.md", "hi")
+
+	bm, err := heliumPath("Default/Bookmarks")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(bm), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bm, mustReadFile(t, "testdata/laptop.json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	dir, err := dataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := setup(remote); err != nil {
+		t.Fatal(err)
+	}
+	if files, _ := git(remote, "ls-tree", "--name-only", "main"); files != "README.md\nbookmarks.json" {
+		t.Errorf("remote files = %q, want README.md and bookmarks.json", files)
+	}
+
+	// broken bookmarks.json on the remote: join fails, but setup stays re-runnable
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := git(other, "pull", "-q", "origin", "main"); err != nil {
+		t.Fatal(err)
+	}
+	pushFile("bookmarks.json", "not json")
+	if err := setup(remote); err == nil {
+		t.Fatal("setup with broken remote bookmarks.json succeeded")
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".git")); !os.IsNotExist(err) {
+		t.Errorf(".git left behind after failed setup (stat err %v)", err)
+	}
+}
