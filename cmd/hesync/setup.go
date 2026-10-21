@@ -85,12 +85,10 @@ func setup(remoteURL string) (err error) {
 		if _, err := git(dir, "checkout", "-B", "main", "origin/main"); err != nil {
 			return err
 		}
-		// main without bookmarks.json (e.g. GitHub's "Add a README"): seed on top of it
-		out, err := git(dir, "ls-tree", "--name-only", "origin/main", "bookmarks.json")
-		if err != nil {
-			return err
-		}
-		seed = out == ""
+		// main without bookmarks.json (e.g. GitHub's "Add a README"): seed on top of it.
+		// origin/main was just checked out, so a missing file is the only expected error.
+		_, err := git(dir, "cat-file", "-e", "origin/main:bookmarks.json")
+		seed = err != nil
 	}
 
 	if seed {
